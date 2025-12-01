@@ -1,142 +1,100 @@
-🧠 Tic-Tac-Toe Endgame Classifier
-Machine Learning + Streamlit App
+🧠 Tic-Tac-Toe Optimal Outcome & Best-Move Predictor
+Streamlit App · Minimax AI · Machine Learning Model
 
-Predict whether X wins given a Tic-Tac-Toe board state.
+This project combines classic AI (minimax) and machine learning (Random Forest) to analyze any Tic-Tac-Toe board state.
+The system can:
+
+✅ Predict the true game-theoretic outcome (win/draw/loss)
+✅ Recommend the best next move under perfect play
+✅ Use an ML model to approximate minimax and show its confidence
+✅ Provide an interactive UI for exploring game states
+
+This is both an AI project and a machine learning project wrapped in a clean Streamlit app.
 
 📌 Project Overview
 
-This project uses a Random Forest classifier trained on the Tic-Tac-Toe Endgame Dataset, which contains all possible legal endgame states of a 3×3 Tic-Tac-Toe game where X plays first.
+Tic-Tac-Toe is fully solvable. For any board state, the outcome under perfect play is deterministic:
 
-The app lets users select a board configuration through an interactive UI and instantly get:
+X can force a win
 
-Prediction: “X wins” or “X does not win”
+O can force a win
 
-Probability estimate from the model
+Both can force a draw
 
-A clean 3×3 board interface
+This project:
+
+Computes exact minimax values for every reachable game state
+
+Generates a dataset of all legal states labeled with optimal outcome:
+
+1 → X win
+
+0 → Draw
+
+-1 → X loss
+
+Trains a Random Forest model to approximate this mapping (state → value)
+
+Builds a Streamlit app to show both:
+
+the exact logical minimax result, and
+
+the model’s prediction + probabilities
+
+It also provides the best next move, so you can see exactly how perfect-play AI behaves.
 
 📊 Dataset Description
 
-The dataset used is the UCI Tic-Tac-Toe Endgame Database, which includes:
+A custom dataset is generated using a game simulator and minimax:
 
-958 rows
-
-9 categorical features (each cell is x, o, or b)
-
-1 target column (positive = X wins, negative = X does not win)
-
-Importantly:
-
-✔ This dataset represents every possible legal endgame state
-✔ No additional states exist beyond those in the dataset
-✔ Therefore the dataset is already complete and exhaustive
-
-This property makes Tic-Tac-Toe a closed state space problem.
-
-🎯 Why the Model Uses 100% Training Data
-
-Normally, machine learning requires a train/test split to evaluate generalization.
-
-However, this project is special:
-
-✔ The dataset already contains all possible states
-
-There are no “future” or “unseen” states outside the dataset.
-
-✔ The user interface accepts only valid 3×3 board configurations
-
-Every possible input a user can choose is already represented in the training data.
-
-✔ Therefore, 100% training data is used without a test set
-
-Splitting the dataset would artificially remove valid states that the model should know.
-
-✔ The model achieves almost 100% accuracy on the full dataset
-
-This is expected because the model essentially learns the deterministic winning rules of Tic-Tac-Toe.
-
-✔ Any user input corresponds to an instance the model has already seen
-
-So the prediction is valid, accurate, and grounded in the complete data.
-
-This approach is legitimate and logical for closed-form deterministic games like Tic-Tac-Toe.
-
-🤖 Model Details
-
-The model is implemented as a scikit-learn Pipeline containing:
-
-OneHotEncoder
-Converts each board position (x, o, b) into encoded categorical vectors.
-
-RandomForestClassifier
-
-300 estimators
-
-Handles categorical patterns well
-
-Learns winning patterns from combinations of cell states
-
-Achieves close to 100% training accuracy
-
-Model File
-
-Saved as:
-
-model/tic_tac_toe_rf.pkl
+data/tic_tac_toe_minimax_states.csv
 
 
-Trained with train_model.py, which loads the dataset and fits the model using all rows.
+Each row is:
 
-🖼 Streamlit App
+Cell 1	Cell 2	...	Cell 9	value
+x/o/b	x/o/b	...	x/o/b	-1/0/1
 
-Run the app with:
+Where:
 
-streamlit run app.py
+value = 1 → X can force a win
 
+value = 0 → Game ends in a draw under perfect play
 
-Features:
+value = -1 → O can force a win
 
-3×3 grid of dropdowns (x, o, b)
+This dataset contains all reachable legal states of a Tic-Tac-Toe game (≈ 5,478 states).
 
-“Predict” button
+🎯 Why No Train/Test Split?
 
-Display of:
+Normally, ML requires a test set.
+But here:
 
-Predicted outcome
+✔ The dataset is complete and contains all possible states
+✔ There are no “future” or “unseen” states
+✔ Every input in the app corresponds to a row in the dataset
+✔ This is a value-function approximation task, not prediction of unknown data
 
-Winning probability for X
+So the model is intentionally trained on 100% of the data, because:
 
-Clean board alignment
+The goal is for the model to approximate the minimax value function, not to generalize beyond unseen data.
 
-🔧 Installation & Setup
-1. Create a virtual environment (recommended)
-python -m venv .venv
-.\.venv\Scripts\activate
+The app still shows the difference between:
 
-2. Install dependencies
-pip install -r requirements.txt
+the true minimax outcome, and
 
+the Random Forest approximation.
 
-Or, manually:
+🤖 AI Component: Minimax (Perfect Play)
 
-pip install streamlit scikit-learn pandas joblib
+The app includes a full minimax solver that computes:
 
-3. Train the model (optional if model already included)
-python train_model.py
+Exact optimal outcome (X win / draw / X loss)
 
-4. Start the app
-streamlit run app.py
+Best next move(s)
 
-📌 Notes
+Which player is to move
 
-This app does not evaluate mid-game “future win probability”.
-It strictly predicts whether the given final board is a win for X.
+Terminal board detection
 
-Predictions for mid-game boards are still returned but are extrapolations,
-since the model is trained only on endgame states.
-
-For perfect game analysis (minimax), a different approach would be required.
-
-📜 License
-
-This project is open for educational and personal use.
+This is the same logic used in classic game AI and ensures fully correct ground-truth labels.
